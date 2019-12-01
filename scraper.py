@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import json
 from lxml import html
 import re
