@@ -60,10 +60,20 @@ def login(url):
     login_url = relurl_to_url(mrefresh_to_relurl(response.headers['REFRESH']), url)
     return login_url
 
+def get_results_url(url):
+    page = get_page(url)
+    # don't use the link id because it looks automatically generated
+    # let's hope they don't change the layout
+    relurl = page.xpath('//div[@id = "pageTopNavi"]//a/@href')[1]
+    return relurl_to_url(relurl, url)
+
+
+
 def main():
     url = follow_mrefresh(data['config']['url']) # first redirect
     url = follow_mrefresh(url) # second redirect
     # we should be at the login page now
     url = login(url)
-    url = follow_mrefresh(url) # redirect again...
-    return get_page(url)
+    url = follow_mrefresh(url) # more breadcrumbs
+    url = get_results_url(url)
+    return url
