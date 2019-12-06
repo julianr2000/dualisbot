@@ -29,12 +29,37 @@ class PageInfo:
         success_url = relurl_to_url(mrefresh_to_relurl(response.headers['REFRESH']), url)
         return PageInfo(success_url)
 
-    def goto_result_page(self):
+    def go_to_result_page(self):
         """Use the menu to get to the results page"""
         # don't use the link id because it looks automatically generated
         # let's hope they don't change the layout
         relurl = self.page.xpath('//div[@id = "pageTopNavi"]//a/@href')[1]
         return PageInfo(relurl_to_url(relurl, self.url))
+    
+    def get_other_results(self):
+        """Get the other result pages from the dropdown menu"""
+        # Looks like Hansel and Gretel were short on pebbles this time
+        semester = self.page.xpath('//option[not(@selected)]/@value')
+        inputs = self.page.xpath('//input[@type = "hidden"]')
+        args = { i.name : i.value for i in inputs }
+        # special case for arguments
+        for key in 'sessionno', 'menuno':
+            args['ARGUMENTS'] = args['ARGUMENTS'].replace(key, '-N' + args[key])
+            del args[key]
+        result = []
+        for sem in semester:
+            # Construct query string
+            urlargs = '&'.join(f'{key}={value}' for key, value in args.items())
+            urlargs = urlargs.replace('semester', '-N' + sem)
+            # Use other parts from current url
+            urlp = urlparse(self.url)
+            urlp = urlp._replace(query=urlargs)
+            result.append(PageInfo(urlunparse(urlp)))
+        return result
+
+    def get_popup_urls(self):
+        """Get the urls of the popup windows from the results page"""
+        return [relurl_to_url(relurl, self.url) for relurl in self.page.xpath('//a[starts-with(@id, "Popup_details")]/@href')]
 
 
 def get_page(url):
@@ -83,6 +108,11 @@ def main():
         .follow_mrefresh() # second redirect, we should be at the login page now
         .login()
         .follow_mrefresh() # more breadcrumbs
-        .get_results_url() # go to results page
+        .go_to_result_page() # go to results page
     )
-    return position
+    # Get result overview pages for all semesters
+    res_overviews = position.get_other_results()
+    res_overviews.append(position)
+    # Get links to details for individual courses (the annoying popups)
+    popup_urls = [url for result in res_overviews for url in result.get_popup_urls()]
+    return popup_urls
