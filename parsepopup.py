@@ -18,9 +18,12 @@ def fixed_size(string, size):
 class ResultInfo:
     def __init__(self, page):
         """Parse popup page into a more convenient datastructure"""
-        title = page.xpath('//h1')[0]
-        htmltable = title.xpath('./following-sibling::table')[0]
+        htmltitle = page.xpath('//h1')[0]
+        htmltable = htmltitle.xpath('./following-sibling::table')[0]
         table = [tr.getchildren() for tr in htmltable.getchildren() if tr.tag == 'tr']
+
+        title = re.search('\\s*(.*)$', htmltitle.text)
+        self.title = title.group(1) if title else ''
         
         # All headers visible on the page
         headers = []
@@ -54,7 +57,10 @@ class ResultInfo:
 
     def pretty_print(self):
         column_width = 24
-        title = Fore.LIGHTGREEN_EX + ''.join((fixed_size(column, column_width) for column in self.headers)) + Style.RESET_ALL
+
+        title = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
+
+        headers = Fore.LIGHTGREEN_EX + ''.join((fixed_size(column, column_width) for column in self.headers)) + Style.RESET_ALL
 
         res_strings = []
         for result in self.results:
@@ -70,19 +76,11 @@ class ResultInfo:
 
         final_res_string = (Fore.LIGHTYELLOW_EX
             + fixed_size('Gesamt: ', 2 * column_width)
-            + Fore.BLUE
             + fixed_size(self.final_results, column_width)
             + Style.RESET_ALL
         )
 
         print(title)
+        print(headers)
         print(results_string)
         print(final_res_string)
-
-
-
-with open('page3.html') as file:
-    page = html.fromstring(file.read())
-
-res = ResultInfo(page)
-res.pretty_print()
