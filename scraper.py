@@ -37,8 +37,10 @@ class PageInfo:
         return PageInfo(relurl_to_url(relurl, self.url))
     
     def get_other_results(self):
-        """Get the other result pages from the dropdown menu"""
+        """Get the urls of the other result pages from the dropdown menu"""
         # Looks like Hansel and Gretel were short on pebbles this time
+        # the dropdown menu only contains the semester-id, the other parts of the url
+        # are inside the hidden input tags
         semester = self.page.xpath('//option[not(@selected)]/@value')
         inputs = self.page.xpath('//input[@type = "hidden"]')
         args = { i.name : i.value for i in inputs }
@@ -71,11 +73,7 @@ def get_page(url):
 def get_mrefresh_content(page):
     """Get the link of the metarefresh tag if it exists"""
     tags = page.xpath('//meta[@http-equiv = "refresh"]/@content')
-    if len(tags) > 1:
-        raise ValueError(f'Unexpected number of metarefresh tags: {len(tags)}')
-    elif len(tags) == 1:
-        return tags[0]
-    return None
+    return tags[0]
 
 def mrefresh_to_relurl(content):
     """Get a relative url from the contents of a metarefresh tag"""
@@ -108,7 +106,7 @@ def main():
         .follow_mrefresh() # second redirect, we should be at the login page now
         .login()
         .follow_mrefresh() # more breadcrumbs
-        .go_to_result_page() # go to results page
+        .go_to_result_page()
     )
     # Get result overview pages for all semesters
     res_overviews = position.get_other_results()
