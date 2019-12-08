@@ -7,14 +7,31 @@ import requests
 from urllib.parse import urlparse, urlunparse
 
 from configdata import data
+from parsepopup import ResultInfo
 
 session = requests.session()
+
+class lazy_property:
+    """Like @property, but cache the function result"""
+    def __init__(self, func):
+        self.func = func
+        self.__doc__ = func.__doc__
+
+    def __get__(self, instance, owner):
+        if instance is None: # Access through class
+            return self
+        result = self.func(instance)
+        setattr(instance, self.func.__name__, result)
+        return result # return on first lookup
 
 
 class PageInfo:
     def __init__(self, url):
         self.url = url
-        self.page = get_page(url)
+    
+    @lazy_property
+    def page(self):
+        return get_page(self.url)
 
     def follow_mrefresh(self):
         return PageInfo(get_mrefresh_url(self.page, self.url))
@@ -29,39 +46,52 @@ class PageInfo:
         success_url = relurl_to_url(mrefresh_to_relurl(response.headers['REFRESH']), url)
         return PageInfo(success_url)
 
-    def go_to_result_page(self):
-        """Use the menu to get to the results page"""
+    def go_to_semester_page(self):
+        """Use the menu to get to the semester overview page"""
         # don't use the link id because it looks automatically generated
         # let's hope they don't change the layout
         relurl = self.page.xpath('//div[@id = "pageTopNavi"]//a/@href')[1]
-        return PageInfo(relurl_to_url(relurl, self.url))
-    
-    def get_other_results(self):
-        """Get the urls of the other result pages from the dropdown menu"""
+        return SemesterInfo.from_PageInfo(PageInfo(relurl_to_url(relurl, self.url)))
+
+class SemesterInfo:
+    def __init__(self, page_info, name):
+        self.page_info = page_info
+        self.name = name
+
+    @classmethod
+    def from_PageInfo(cls, page_info):
+        return cls(page_info, page_info.page.xpath('//option[@selected = "selected"]/text()')[0])
+
+    @lazy_property
+    def result_infos(self):
+        """Get the detailed info for the individual popup pages"""
+        result_infos = []
+        for relurl in self.page_info.page.xpath('//a[starts-with(@id, "Popup_details")]/@href'):
+            result_infos.append(ResultInfo(get_page(relurl_to_url(relurl, self.page_info.url))))
+        return result_infos
+
+    def get_semester_infos(self):
+        """Get the urls and semester names of all semester overview sites from the dropdown menu"""
         # Looks like Hansel and Gretel were short on pebbles this time
         # the dropdown menu only contains the semester-id, the other parts of the url
         # are inside the hidden input tags
-        semester = self.page.xpath('//option[not(@selected)]/@value')
-        inputs = self.page.xpath('//input[@type = "hidden"]')
+        semester = self.page_info.page.xpath('//option[not(@selected)]')
+        inputs = self.page_info.page.xpath('//input[@type = "hidden"]')
         args = { i.name : i.value for i in inputs }
         # special case for arguments
         for key in 'sessionno', 'menuno':
             args['ARGUMENTS'] = args['ARGUMENTS'].replace(key, '-N' + args[key])
             del args[key]
-        result = []
+        result = [self]
         for sem in semester:
             # Construct query string
             urlargs = '&'.join(f'{key}={value}' for key, value in args.items())
-            urlargs = urlargs.replace('semester', '-N' + sem)
+            urlargs = urlargs.replace('semester', '-N' + sem.attrib['value'])
             # Use other parts from current url
-            urlp = urlparse(self.url)
+            urlp = urlparse(self.page_info.url)
             urlp = urlp._replace(query=urlargs)
-            result.append(PageInfo(urlunparse(urlp)))
+            result.append(SemesterInfo(PageInfo(urlunparse(urlp)), sem.text))
         return result
-
-    def get_popup_urls(self):
-        """Get the urls of the popup windows from the results page"""
-        return [relurl_to_url(relurl, self.url) for relurl in self.page.xpath('//a[starts-with(@id, "Popup_details")]/@href')]
 
 
 def get_page(url):
@@ -100,17 +130,19 @@ def get_login_data(page):
     return form.action, header
 
 def main():
-    position = (
+    semesters = (
         PageInfo(data['config']['url'])
         .follow_mrefresh() # first redirect
         .follow_mrefresh() # second redirect, we should be at the login page now
         .login()
         .follow_mrefresh() # more breadcrumbs
-        .go_to_result_page()
+        .go_to_semester_page()
+        .get_semester_infos()
     )
-    # Get result overview pages for all semesters
-    res_overviews = position.get_other_results()
-    res_overviews.append(position)
-    # Get links to details for individual courses (the annoying popups)
-    popup_urls = [url for result in res_overviews for url in result.get_popup_urls()]
-    return popup_urls
+    for sem in semesters:
+        for res in sem.result_infos:
+            res.pretty_print()
+    return semesters # for debugging
+
+if __name__ == '__main__':
+    sems = main()
