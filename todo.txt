@@ -1,0 +1,31 @@
+ui:
+-s --semester 1-6
+-h --help
+--secrets FILENAME
+--config FILENAME
+--data FILENAME
+--json
+--disable-color
+-d --diff
+-u --username username
+-p --password password
+
+todo:
+Error on missing files
+Error on incorrect password
+Error on missing network connection
+Hardcode Dualis url
+better pretty-print output
+add readme
+add license
+upload to github
+
+Basic interaction:
+Enter username:
+inf...
+Enter password:
+not visible
+Login successful.
+Username and password can be stored unencrypted in ./data/secrets.json
+Do you want to store username and password on disk? [y/n]
+y

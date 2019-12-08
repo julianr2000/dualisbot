@@ -88,14 +88,18 @@ class Result:
 
 
 class Semester:
-    def __init__(self, page_info, name):
+    def __init__(self, page_info, name, number):
         self.page_info = page_info
         self.name = name
+        self.number = number
         self._result_infos_cache = None
 
     @classmethod
     def from_PageInfo(cls, page_info):
-        return cls(page_info, page_info.page.xpath('//option[@selected = "selected"]/text()')[0])
+        selected = page_info.page.xpath('//option[@selected = "selected"]')[0]
+        # First semester is at the bottom of the drop-down menu, count following options
+        number = len(selected.xpath('./following-sibling::option')) + 1
+        return cls(page_info, selected.text, number)
 
     @property
     def result_infos(self):

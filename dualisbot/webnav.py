@@ -5,7 +5,7 @@ from urllib.parse import urlparse, urlunparse
 import requests
 from lxml import html
 
-from dualisbot.configdata import data
+from dualisbot.config import get_config_val
 from dualisbot.resultdata import Semester
 
 session = requests.session()
@@ -94,7 +94,7 @@ def get_login_data(page):
     form = page.xpath('//form[@id = "cn_loginForm"]')[0]
     inputs = form.xpath('.//input')
     header = { i.name: i.value for i in inputs if i.name is not None }
-    header.update({ 'usrname': data['secrets']['username'], 'pass': data['secrets']['password'] })
+    header.update({ 'usrname': get_config_val('username'), 'pass': get_config_val('password') })
     return form.action, header
 
 def parse_dropdown_menu(semester):
@@ -117,12 +117,14 @@ def parse_dropdown_menu(semester):
         # Use other parts from current url
         urlp = urlparse(semester.page_info.url)
         urlp = urlp._replace(query=urlargs)
-        result.append(Semester(PageInfo(urlunparse(urlp)), opt.text))
+                # First semester is at the bottom of the drop-down menu, therefore count following option
+        number = len(opt.xpath('./following-sibling::option')) + 1
+        result.append(Semester(PageInfo(urlunparse(urlp)), opt.text, number))
     return result
 
 def get_semesters():
     semester = (
-        PageInfo(data['config']['url'])
+        PageInfo(get_config_val('url'))
         .follow_mrefresh() # first redirect
         .follow_mrefresh() # second redirect, we should be at the login page now
         .login()
@@ -130,6 +132,3 @@ def get_semesters():
         .go_to_semester_page()
     )
     return parse_dropdown_menu(semester)
-
-if __name__ == '__main__': # for debugging
-    sems = get_semesters()
