@@ -1,13 +1,13 @@
-#!/usr/bin/python
-
 import json
-from lxml import html
 import re
-import requests
+from itertools import tee
 from urllib.parse import urlparse, urlunparse
 
-from configdata import data
-from parsepopup import ResultInfo
+import requests
+from lxml import html
+
+from dualisbot.configdata import data
+from dualisbot.parsepopup import ResultInfo
 
 session = requests.session()
 
@@ -23,7 +23,6 @@ class lazy_property:
         result = self.func(instance)
         setattr(instance, self.func.__name__, result)
         return result # return on first lookup
-
 
 class PageInfo:
     def __init__(self, url):
@@ -129,7 +128,7 @@ def get_login_data(page):
     header.update({ 'usrname': data['secrets']['username'], 'pass': data['secrets']['password'] })
     return form.action, header
 
-def main():
+def get_semesters():
     semesters = (
         PageInfo(data['config']['url'])
         .follow_mrefresh() # first redirect
@@ -139,10 +138,7 @@ def main():
         .go_to_semester_page()
         .get_semester_infos()
     )
-    for sem in semesters:
-        for res in sem.result_infos:
-            res.pretty_print()
-    return semesters # for debugging
+    return semesters
 
-if __name__ == '__main__':
-    sems = main()
+if __name__ == '__main__': # for debugging
+    sems = get_semesters()

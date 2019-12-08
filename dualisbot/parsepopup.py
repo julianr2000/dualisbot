@@ -1,7 +1,8 @@
+import re
+
 import colorama
 from colorama import Style, Fore, Back
 from lxml import html
-import re
 
 colorama.init()
 
