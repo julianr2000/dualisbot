@@ -15,7 +15,6 @@ class lazy_property:
     """Like @property, but cache the function result"""
     def __init__(self, func):
         self.func = func
-        self.__doc__ = func.__doc__
 
     def __get__(self, instance, owner):
         if instance is None: # Access through class
@@ -56,18 +55,25 @@ class SemesterInfo:
     def __init__(self, page_info, name):
         self.page_info = page_info
         self.name = name
+        self._result_infos_cache = None
 
     @classmethod
     def from_PageInfo(cls, page_info):
         return cls(page_info, page_info.page.xpath('//option[@selected = "selected"]/text()')[0])
 
-    @lazy_property
+    @property
     def result_infos(self):
-        """Get the detailed info for the individual popup pages"""
-        result_infos = []
-        for relurl in self.page_info.page.xpath('//a[starts-with(@id, "Popup_details")]/@href'):
-            result_infos.append(ResultInfo(get_page(relurl_to_url(relurl, self.page_info.url))))
-        return result_infos
+        """Get the detailed info for the individual popup pages
+        Returns a iterator and caches the results"""
+        def res_gen():
+            for relurl in self.page_info.page.xpath('//a[starts-with(@id, "Popup_details")]/@href'):
+                yield ResultInfo(get_page(relurl_to_url(relurl, self.page_info.url)))
+
+        if self._result_infos_cache is None:
+            it, self._result_infos_cache = tee(res_gen())
+        else:
+            it, self._result_infos_cache = tee(self._result_infos_cache)
+        return it
 
     def get_semester_infos(self):
         """Get the urls and semester names of all semester overview sites from the dropdown menu"""
