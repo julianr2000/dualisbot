@@ -1,4 +1,5 @@
 import re
+from itertools import tee
 
 import colorama
 from colorama import Style, Fore, Back
@@ -14,10 +15,10 @@ def trim_space(string):
 def fixed_size(string, size):
     return string.ljust(size)[:size]
 
-class ResultInfo:
-    def __init__(self, page):
+class Result:
+    def __init__(self, page_info):
         """Parse popup page into a more convenient datastructure"""
-        htmltitle = page.xpath('//h1')[0]
+        htmltitle = page_info.page.xpath('//h1')[0]
         htmltable = htmltitle.xpath('./following-sibling::table')[0]
         table = [tr.getchildren() for tr in htmltable.getchildren() if tr.tag == 'tr']
 
@@ -83,3 +84,25 @@ class ResultInfo:
         print(headers)
         print(results_string)
         print(final_res_string)
+
+
+
+class Semester:
+    def __init__(self, page_info, name):
+        self.page_info = page_info
+        self.name = name
+        self._result_infos_cache = None
+
+    @classmethod
+    def from_PageInfo(cls, page_info):
+        return cls(page_info, page_info.page.xpath('//option[@selected = "selected"]/text()')[0])
+
+    @property
+    def result_infos(self):
+        """Get the detailed info for the individual popup pages
+        Returns a iterator and caches the results"""
+        if self._result_infos_cache is None:
+            it, self._result_infos_cache = tee(Result(page_info) for page_info in self.page_info.get_result_popups())
+        else:
+            it, self._result_infos_cache = tee(self._result_infos_cache)
+        return it
