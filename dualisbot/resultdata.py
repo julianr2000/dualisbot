@@ -1,3 +1,4 @@
+import json
 import re
 from itertools import tee
 
@@ -16,44 +17,54 @@ def fixed_size(string, size):
     return string.ljust(size)[:size]
 
 class Result:
-    def __init__(self, page_info):
+    def __init__(self, title, headers, results, final_results):
+        self.title = title
+        self.headers = headers
+        self.results = results
+        self.final_results = final_results
+
+    @classmethod
+    def from_PageInfo(cls, page_info):
         """Parse popup page into a more convenient datastructure"""
         htmltitle = page_info.page.xpath('//h1')[0]
         htmltable = htmltitle.xpath('./following-sibling::table')[0]
         table = [tr.getchildren() for tr in htmltable.getchildren() if tr.tag == 'tr']
 
-        title = re.search('\\s*(.*)$', htmltitle.text)
-        self.title = title.group(1) if title else ''
+        title_match = re.search('\\s*(.*)$', htmltitle.text)
+        title = title_match.group(1) if title_match else ''
         
         # All headers visible on the page
-        headers = []
+        all_headers = []
         for row in table:
             for td in row:
                 if 'tbsubhead' in row[0].classes and not td.text.isspace():
-                    headers.append(td.text)
+                    all_headers.append(td.text)
         
-        self.results = []
+        results = []
         for row in table:
             if len(row) > 0 and 'tbdata' in row[0].classes:
                 result = {}
                 for i, td in enumerate(row):
                     text = trim_space(td.text)
-                    if text and i < len(headers):
-                        result[headers[i]] = text
-                self.results.append(result)
+                    if text and i < len(all_headers):
+                        result[all_headers[i]] = text
+                results.append(result)
 
+        # Necessary headers
         # Using a dict for set operations because dicts preserve insertion order
-        self.headers = list({ column : None for result in self.results for column in result.keys() }.keys())
+        headers = list({ column : None for result in results for column in result.keys() }.keys())
         
         final_results_td = table[-1][3]
-        self.final_results = trim_space(final_results_td.text.replace('\xa0', ' '))
+        final_results = trim_space(final_results_td.text.replace('\xa0', ' '))
         # Note: the td element that should contain the final grade is actually invalid html if no
         # grade has been set (this is a bug on website)
         # It is still parsed mostly correct as a td element, but the text ends up inside the tag (where the attributes should be) 
-        if not self.final_results:
+        if not final_results:
             match = re.match('^<[^>]*"\\s*(.*)\\s*>', html.tostring(final_results_td, encoding='unicode'))
             if match:
-                self.final_results = match.group(1)
+                final_results = match.group(1)
+
+        return cls(title, headers, results, final_results)
 
     def pretty_print(self):
         column_width = 24
@@ -85,6 +96,14 @@ class Result:
         print(results_string)
         print(final_res_string)
 
+    @classmethod
+    def from_serializable(cls, data):
+        return cls(*map(data.get, ['title', 'headers', 'results', 'final_results']))
+
+    def get_serializable(self):
+        """Get a representation of the object that can be serialized using the builtin json module"""
+        return self.__dict__
+
 
 
 class Semester:
@@ -92,7 +111,7 @@ class Semester:
         self.page_info = page_info
         self.name = name
         self.number = number
-        self._result_infos_cache = None
+        self._result_infos_cache = []
 
     @classmethod
     def from_PageInfo(cls, page_info):
@@ -101,12 +120,36 @@ class Semester:
         number = len(selected.xpath('./following-sibling::option')) + 1
         return cls(page_info, selected.text, number)
 
+    @classmethod
+    def from_json(cls, jsonstr):
+        """Recreate object from a json string created using self.to_json"""
+        data = json.loads(jsonstr)
+        obj = cls(None, data.get('name'), data.get('number'))
+        results_dict = data.get('results')
+        results = [Result.from_serializable(res) for res in results_dict]
+        obj._result_infos_cache = results
+        return obj
+
+
     @property
     def result_infos(self):
         """Get the detailed info for the individual popup pages
-        Returns a iterator and caches the results"""
-        if self._result_infos_cache is None:
-            it, self._result_infos_cache = tee(Result(page_info) for page_info in self.page_info.get_result_popups())
-        else:
-            it, self._result_infos_cache = tee(self._result_infos_cache)
-        return it
+        Returns a generator and caches the results"""
+        def cache_results():
+            for page_info in self.page_info.get_result_popups():
+                res = Result.from_PageInfo(page_info)
+                yield res
+                self._result_infos_cache.append(res)
+
+        return self._result_infos_cache or cache_results()
+
+    def to_json(self):
+        """Dump relevant information to json
+        
+        page_info will not be stored"""
+        data = {
+            'name': self.name,
+            'number': self.number,
+            'results': [res.get_serializable() for res in self.result_infos]
+        }
+        return json.dumps(data)
