@@ -8,6 +8,7 @@ def parse_args():
     parser.add_argument('-d', '--diff', help='Only show results that have changed since the last invocation', action='store_true')
     parser.add_argument('-u', '--username', help='Username for Dualis')
     parser.add_argument('-p', '--password', help='Password for Dualis')
+    parser.add_argument('--json', help='Output to JSON', action='store_true')
     args = parser.parse_args()
     data['config'].update(vars(args))
 

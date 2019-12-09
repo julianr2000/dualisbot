@@ -1,4 +1,3 @@
-import json
 import re
 from itertools import tee
 
@@ -121,9 +120,8 @@ class Semester:
         return cls(page_info, selected.text, number)
 
     @classmethod
-    def from_json(cls, jsonstr):
-        """Recreate object from a json string created using self.to_json"""
-        data = json.loads(jsonstr)
+    def from_serializable(cls, data):
+        """Recreate object from a dict created by self.get_serializable"""
         obj = cls(None, data.get('name'), data.get('number'))
         results_dict = data.get('results')
         results = [Result.from_serializable(res) for res in results_dict]
@@ -143,13 +141,12 @@ class Semester:
 
         return self._result_infos_cache or cache_results()
 
-    def to_json(self):
-        """Dump relevant information to json
+    def get_serializable(self):
+        """Dump relevant information to dict
         
-        page_info will not be stored"""
-        data = {
+        (page_info will not be stored)"""
+        return {
             'name': self.name,
             'number': self.number,
             'results': [res.get_serializable() for res in self.result_infos]
         }
-        return json.dumps(data)
