@@ -11,14 +11,13 @@ ui:
 -p --password password
 
 todo:
-Error on missing files
 Error on incorrect password
 Error on missing network connection
-Hardcode Dualis url
 better pretty-print output
 add readme
 add license
 upload to github
+remove headers from json
 
 Basic interaction:
 Enter username:
@@ -26,6 +25,5 @@ inf...
 Enter password:
 not visible
 Login successful.
-Username and password can be stored unencrypted in ./data/secrets.json
-Do you want to store username and password on disk? [y/n]
+Do you want to store username and password (unencrypted) on disk? [y/n]
 y
