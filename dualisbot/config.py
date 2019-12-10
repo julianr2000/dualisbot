@@ -1,5 +1,7 @@
 import json
 
+# Functions for loading config values
+
 config = {
     'url': 'https://dualis.dhbw.de', # Hardcoded here because it should not be configurable
     'secrets': 'data/secrets.json',
@@ -9,11 +11,8 @@ config = {
 secrets_keys = ['username', 'password']
 
 def read_config():
-    print(config)
     load_secrets()
-    print(config)
     load_config()
-    print(config)
 
 def config_load_json(configval):
     def dec(func):

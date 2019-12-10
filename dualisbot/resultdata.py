@@ -1,9 +1,11 @@
+import json
 import re
-from itertools import tee
 
 import colorama
 from colorama import Style, Fore, Back
 from lxml import html
+
+# Result extraction and printing
 
 colorama.init()
 
@@ -16,9 +18,8 @@ def fixed_size(string, size):
     return string.ljust(size)[:size]
 
 class Result:
-    def __init__(self, title, headers, results, final_results):
+    def __init__(self, title, results, final_results):
         self.title = title
-        self.headers = headers
         self.results = results
         self.final_results = final_results
 
@@ -48,10 +49,6 @@ class Result:
                     if text and i < len(all_headers):
                         result[all_headers[i]] = text
                 results.append(result)
-
-        # Necessary headers
-        # Using a dict for set operations because dicts preserve insertion order
-        headers = list({ column : None for result in results for column in result.keys() }.keys())
         
         final_results_td = table[-1][3]
         final_results = trim_space(final_results_td.text.replace('\xa0', ' '))
@@ -63,41 +60,45 @@ class Result:
             if match:
                 final_results = match.group(1)
 
-        return cls(title, headers, results, final_results)
+        return cls(title, results, final_results)
 
     def pretty_print(self):
         column_width = 24
 
-        title = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
+        title_str = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
 
-        headers = Fore.LIGHTGREEN_EX + ''.join((fixed_size(column, column_width) for column in self.headers)) + Style.RESET_ALL
+        # Necessary headers
+        # Using a dict for set operations because dicts preserve insertion order
+        headers = list({ column : None for result in self.results for column in result.keys() }.keys())
+
+        headers_str = Fore.LIGHTGREEN_EX + ''.join((fixed_size(column, column_width) for column in headers)) + Style.RESET_ALL
 
         res_strings = []
         for result in self.results:
             col_strings = []
-            for column in self.headers:
+            for column in headers:
                 value = result.get(column)
                 if value:
                     col_strings.append(fixed_size(value, column_width))
                 else:
                     col_strings.append(' ' * column_width)
             res_strings.append(''.join(col_strings))
-        results_string = '\n'.join(res_strings)
+        results_str = '\n'.join(res_strings)
 
-        final_res_string = (Fore.LIGHTYELLOW_EX
+        final_res_str = (Fore.LIGHTYELLOW_EX
             + fixed_size('Gesamt: ', 2 * column_width)
             + fixed_size(self.final_results, column_width)
             + Style.RESET_ALL
         )
 
-        print(title)
-        print(headers)
-        print(results_string)
-        print(final_res_string)
+        print(title_str)
+        print(headers_str)
+        print(results_str)
+        print(final_res_str)
 
     @classmethod
     def from_serializable(cls, data):
-        return cls(*map(data.get, ['title', 'headers', 'results', 'final_results']))
+        return cls(*map(data.get, ['title', 'results', 'final_results']))
 
     def get_serializable(self):
         """Get a representation of the object that can be serialized using the builtin json module"""
@@ -150,3 +151,19 @@ class Semester:
             'number': self.number,
             'results': [res.get_serializable() for res in self.result_infos]
         }
+
+    def pretty_print(self):
+        for res in self.result_infos:
+            res.pretty_print()
+        print()
+
+
+def sems_to_json(semesters, to_display):
+    """Dump list of semesters to json""" 
+    return json.dumps([sem.get_serializable() for sem in semesters if to_display is None or sem.number == to_display], indent=4)
+
+def sems_pretty_print(semesters, to_display):
+    """Pretty print list of semesters"""
+    for sem in semesters:
+        if to_display is None or sem.number == to_display:
+            sem.pretty_print()

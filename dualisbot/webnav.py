@@ -8,6 +8,8 @@ from lxml import html
 from dualisbot.config import get_config_val
 from dualisbot.resultdata import Semester
 
+# Functions for navigation the websites and extracting links
+
 session = requests.session()
 
 class lazy_property:
