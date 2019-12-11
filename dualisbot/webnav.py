@@ -46,7 +46,10 @@ class PageInfo:
         # send it
         response = session.post(url, data=header)
         # parse response
-        return PageInfo.from_relurl(mrefresh_to_relurl(response.headers['REFRESH']), url)
+        if response.headers.get('Set-cookie'):
+            return PageInfo.from_relurl(mrefresh_to_relurl(response.headers['REFRESH']), url)
+        else:
+            raise LoginFailed('Incorrect username or password')
 
     def go_to_semester_page(self):
         """Use the menu to get to the semester overview page"""
@@ -62,7 +65,8 @@ class PageInfo:
             for relurl in self.page.xpath('//a[starts-with(@id, "Popup_details")]/@href')
         ]
 
-
+class LoginFailed(Exception):
+    pass
 
 def get_page(url):
     with session.get(url) as response:

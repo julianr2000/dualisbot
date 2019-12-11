@@ -11,13 +11,10 @@ ui:
 -p --password password
 
 todo:
-Error on incorrect password
-Error on missing network connection
 better pretty-print output
 add readme
 add license
 upload to github
-remove headers from json
 
 Basic interaction:
 Enter username:
