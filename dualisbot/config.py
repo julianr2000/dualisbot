@@ -1,11 +1,17 @@
 import json
+import sys
+from pathlib import Path
 
 # Functions for loading config values
 
+def path_complete(path):
+    return (Path(sys.argv[0]).parent / path).resolve()
+
 config = {
     'url': 'https://dualis.dhbw.de', # Hardcoded here because it should not be configurable
-    'secrets': 'data/secrets.json',
-    'config': 'data/config.json'
+    'secrets': path_complete('data/secrets.json'),
+    'config': path_complete('data/config.json'),
+    'data': path_complete('data/data.json')
 }
 
 secrets_keys = ['username', 'password']
