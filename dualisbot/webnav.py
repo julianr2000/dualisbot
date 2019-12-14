@@ -1,5 +1,6 @@
 import json
 import re
+from functools import cached_property
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -12,18 +13,6 @@ from dualisbot.resultdata import Semester
 
 session = requests.session()
 
-class lazy_property:
-    """Like @property, but cache the function result"""
-    def __init__(self, func):
-        self.func = func
-
-    def __get__(self, instance, owner):
-        if instance is None: # Access through class
-            return self
-        result = self.func(instance)
-        setattr(instance, self.func.__name__, result)
-        return result # return on first lookup
-
 class PageInfo:
     def __init__(self, url):
         self.url = url
@@ -32,7 +21,7 @@ class PageInfo:
     def from_relurl(cls, relurl, base_url):
         return cls(relurl_to_url(relurl, base_url))
     
-    @lazy_property
+    @cached_property
     def page(self):
         return get_page(self.url)
 
