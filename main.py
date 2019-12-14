@@ -5,9 +5,9 @@ import sys
 from requests.exceptions import ConnectionError
 
 from dualisbot.cmdline import parse_args
-from dualisbot.config import read_config, get_config_val
+from dualisbot.config import read_config
 from dualisbot.webnav import get_semesters, LoginFailed
-from dualisbot.resultdata import sems_to_json, sems_pretty_print
+from dualisbot.resultdata import do_output_io
 
 def main():
     parse_args()
@@ -21,11 +21,7 @@ def main():
         print(e, file=sys.stderr)
         sys.exit(1)
 
-    to_display = get_config_val('semester')
-    if get_config_val('json'):
-        print(sems_to_json(sems, to_display))
-    else:
-        sems_pretty_print(sems, to_display)
+    do_output_io(sems)
 
 if __name__ == '__main__':
     main()

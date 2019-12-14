@@ -6,7 +6,7 @@ ui:
 --data FILENAME
 --json
 --disable-color
--d --diff
+-n --new
 -u --username username
 -p --password password
 

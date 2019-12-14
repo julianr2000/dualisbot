@@ -1,9 +1,12 @@
+import copy
 import json
 import re
 
 import colorama
 from colorama import Style, Fore, Back
 from lxml import html
+
+from dualisbot.config import get_config_val
 
 # Result extraction and printing
 
@@ -135,10 +138,11 @@ class Semester:
         """Get the detailed info for the individual popup pages
         Returns a generator and caches the results"""
         def cache_results():
-            for page_info in self.page_info.get_result_popups():
-                res = Result.from_PageInfo(page_info)
-                yield res
-                self._result_infos_cache.append(res)
+            if self.page_info:
+                for page_info in self.page_info.get_result_popups():
+                    res = Result.from_PageInfo(page_info)
+                    yield res
+                    self._result_infos_cache.append(res)
 
         return self._result_infos_cache or cache_results()
 
@@ -155,15 +159,79 @@ class Semester:
     def pretty_print(self):
         for res in self.result_infos:
             res.pretty_print()
-        print()
 
 
-def sems_to_json(semesters, to_display):
+def sems_to_json(semesters):
     """Dump list of semesters to json""" 
-    return json.dumps([sem.get_serializable() for sem in semesters if to_display is None or sem.number == to_display], indent=4)
+    return json.dumps([sem.get_serializable() for sem in semesters], indent=4)
 
-def sems_pretty_print(semesters, to_display):
+def sems_to_dict(semesters):
+    return { sem.number: sem.get_serializable() for sem in semesters}
+
+def sems_pretty_print(semesters):
     """Pretty print list of semesters"""
-    for sem in semesters:
-        if to_display is None or sem.number == to_display:
-            sem.pretty_print()
+    for sem in semesters[:-1]:
+        sem.pretty_print()
+        # print newline if something has been printed
+        if list(sem.result_infos):
+            print()
+    semesters[-1].pretty_print()
+
+def get_old_sems_dict():
+    """Read the data file from disk and cache the result"""
+    self = get_old_sems_dict
+    if getattr(self, 'cache', None) is None:
+        try:
+            with open(get_config_val('data')) as file:
+                data = json.load(file)
+                self.cache = { sem['number']: sem for sem in data }
+        except IOError:
+            self.cache = {}
+    return copy.deepcopy(self.cache)
+
+
+def get_new_res(semesters):
+    """Remove all results and semesters that are present in old_sems_dicts"""
+    sems_d = sems_to_dict(semesters)
+    old_sems_d = get_old_sems_dict()
+    diff_sems = []
+    for key, sem in sems_d.items():
+        if old := old_sems_d.get(key):
+            results = sem['results']
+            sem['results'] = [r for r in results if r not in old['results']]
+            diff_sems.append(Semester.from_serializable(sem))
+            # restore original
+            sem['results'] = results
+    return diff_sems
+
+def do_output_io(semesters):
+    """Print the data and update the data file"""
+    to_display = get_config_val('semester')
+    if to_display is not None:
+        display_sems = [sem for sem in semesters if sem.number == to_display]
+    else:
+        display_sems = semesters
+
+    if get_config_val('new'):
+        output_sems_format(get_new_res(display_sems))
+    else:
+        output_sems_format(display_sems)
+
+    update_data_file(display_sems)
+
+def output_sems_format(semesters):
+    """Output semesters in the desired output format"""
+    if get_config_val('json'):
+        print(sems_to_json(semesters))
+    else:
+        sems_pretty_print(semesters)
+
+def update_data_file(display_sems):
+    sems_d = sems_to_dict(display_sems)
+    old_sems_d = get_old_sems_dict()
+    old_sems_d.update(sems_d)
+    try:
+        with open(get_config_val('data'), 'w') as file:
+            json.dump(list(old_sems_d.values()), file, indent=4)
+    except IOError:
+        pass
