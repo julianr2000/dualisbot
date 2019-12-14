@@ -1,26 +1,6 @@
-ui:
--s --semester 1-6
--h --help
---secrets FILENAME
---config FILENAME
---data FILENAME
---json
---disable-color
--n --new
--u --username username
--p --password password
-
 todo:
 better pretty-print output
 add readme
 add license
 upload to github
-
-Basic interaction:
-Enter username:
-inf...
-Enter password:
-not visible
-Login successful.
-Do you want to store username and password (unencrypted) on disk? [y/n]
-y
+--disable-color

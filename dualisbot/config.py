@@ -1,5 +1,6 @@
 import json
 import sys
+from getpass import getpass
 from pathlib import Path
 
 # Functions for loading config values
@@ -15,10 +16,35 @@ config = {
 }
 
 secrets_keys = ['username', 'password']
+did_read_from_input = False
 
 def read_config():
+    global did_read_from_input
+
     load_secrets()
     load_config()
+
+    for config_val in secrets_keys:
+        if get_config_val(config_val) is None:
+            config[config_val] = get_from_input(config_val)
+            did_read_from_input = True
+
+def save_credentials():
+    if did_read_from_input:
+        # n actually has no special meaning, only y does
+        choice = input('Login successful.\nDo you want to store username and password (unencrypted) on disk? [y/n]\n')
+        if choice.startswith('y') or choice.startswith('Y'):
+            try:
+                with open(get_config_val('secrets'), 'w') as file:
+                    json.dump({ key: get_config_val(key) for key in secrets_keys }, file, indent=4)
+            except IOError:
+                pass
+
+def get_from_input(config_val):
+    if config_val == 'username':
+        return input('Enter username for Dualis:\n')
+    elif config_val == 'password':
+        return getpass('Enter password:\n')
 
 def config_load_json(configval):
     def dec(func):
