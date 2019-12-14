@@ -1,5 +1,0 @@
-todo:
-add readme
-add license
-upload to github
---disable-color
