@@ -1,5 +1,4 @@
 todo:
-better pretty-print output
 add readme
 add license
 upload to github

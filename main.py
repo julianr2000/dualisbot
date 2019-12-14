@@ -26,5 +26,9 @@ def main():
     do_output_io(sems)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        # don't print stacktrace
+        sys.exit(1)
 

@@ -1,6 +1,8 @@
 import copy
 import json
 import re
+import textwrap
+from itertools import zip_longest
 
 import colorama
 from colorama import Style, Fore, Back
@@ -16,9 +18,6 @@ def trim_space(string):
     if not string or string.isspace():
         return None
     return string.strip()
-
-def fixed_size(string, size):
-    return string.ljust(size)[:size]
 
 class Result:
     def __init__(self, title, results, final_results):
@@ -67,32 +66,27 @@ class Result:
 
     def pretty_print(self):
         column_width = 24
+        def table_row(columns):
+            return (
+                '\n'.join(
+                    map(
+                        lambda row: ' '.join([col.ljust(column_width) for col in row]),
+                        zip_longest(*[textwrap.wrap(col, width=column_width) for col in columns], fillvalue=''))))
+
 
         title_str = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
 
         # Necessary headers
         # Using a dict for set operations because dicts preserve insertion order
         headers = list({ column : None for result in self.results for column in result.keys() }.keys())
-
-        headers_str = Fore.LIGHTGREEN_EX + ''.join((fixed_size(column, column_width) for column in headers)) + Style.RESET_ALL
+        headers_str = Fore.LIGHTGREEN_EX + table_row(headers) + Style.RESET_ALL
 
         res_strings = []
         for result in self.results:
-            col_strings = []
-            for column in headers:
-                value = result.get(column)
-                if value:
-                    col_strings.append(fixed_size(value, column_width))
-                else:
-                    col_strings.append(' ' * column_width)
-            res_strings.append(''.join(col_strings))
+            res_strings.append(table_row([result.get(column, '') for column in headers]))
         results_str = '\n'.join(res_strings)
 
-        final_res_str = (Fore.LIGHTYELLOW_EX
-            + fixed_size('Gesamt: ', 2 * column_width)
-            + fixed_size(self.final_results, column_width)
-            + Style.RESET_ALL
-        )
+        final_res_str = Fore.LIGHTYELLOW_EX + table_row(['Gesamt:', '',  self.final_results]) + Style.RESET_ALL
 
         print(title_str)
         print(headers_str)
@@ -106,7 +100,6 @@ class Result:
     def get_serializable(self):
         """Get a representation of the object that can be serialized using the builtin json module"""
         return self.__dict__
-
 
 
 class Semester:
