@@ -163,12 +163,13 @@ def sems_to_dict(semesters):
 
 def sems_pretty_print(semesters):
     """Pretty print list of semesters"""
-    for sem in semesters[:-1]:
-        sem.pretty_print()
-        # print newline if something has been printed
-        if list(sem.result_infos):
-            print()
-    semesters[-1].pretty_print()
+    if semesters:
+        for sem in semesters[:-1]:
+            sem.pretty_print()
+            # print newline if something has been printed
+            if list(sem.result_infos):
+                print()
+        semesters[-1].pretty_print()
 
 def get_old_sems_dict():
     """Read the data file from disk and cache the result"""
