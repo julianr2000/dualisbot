@@ -3,6 +3,7 @@ import json
 import re
 import textwrap
 from itertools import zip_longest
+from shutil import get_terminal_size
 
 import colorama
 from colorama import Style, Fore, Back
@@ -65,20 +66,27 @@ class Result:
         return cls(title, results, final_results)
 
     def pretty_print(self):
-        column_width = 24
-        def table_row(columns):
-            return (
-                '\n'.join(
-                    map(
-                        lambda row: ' '.join([col.ljust(column_width) for col in row]),
-                        zip_longest(*[textwrap.wrap(col, width=column_width) for col in columns], fillvalue=''))))
-
-
-        title_str = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
+        max_col_width = 35 # Chosen arbitrarily
 
         # Necessary headers
         # Using a dict for set operations because dicts preserve insertion order
         headers = list({ column : None for result in self.results for column in result.keys() }.keys())
+
+        # Get column width
+        termwidth, _ = get_terminal_size()
+        termwidth -= len(headers) - 1 # Subtract spaces between columns
+        col_width = min(termwidth // len(headers), max_col_width)
+
+        def table_row(columns):
+            return (
+                '\n'.join(
+                    map(
+                        lambda row: ' '.join([col.ljust(col_width) for col in row]),
+                        zip_longest(*[textwrap.wrap(col, width=col_width) for col in columns], fillvalue=''))))
+
+
+        title_str = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
+
         headers_str = Fore.LIGHTGREEN_EX + table_row(headers) + Style.RESET_ALL
 
         res_strings = []
