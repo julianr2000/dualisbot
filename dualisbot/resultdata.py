@@ -204,6 +204,8 @@ def get_new_res(semesters):
             diff_sems.append(Semester.from_serializable(sem))
             # restore original
             sem['results'] = results
+        else:
+            diff_sems.append(Semester.from_serializable(sem))
     return diff_sems
 
 def do_output_io(semesters):
