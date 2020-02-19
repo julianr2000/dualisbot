@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import json
 import re
@@ -9,6 +10,7 @@ import colorama
 from colorama import Style, Fore, Back
 from lxml import html
 
+from dualisbot import webnav
 from dualisbot.config import get_config_val
 
 # Result extraction and printing
@@ -27,9 +29,9 @@ class Result:
         self.final_results = final_results
 
     @classmethod
-    def from_PageInfo(cls, page_info):
+    def from_pageinfo(cls, pageinfo):
         """Parse popup page into a more convenient datastructure"""
-        htmltitle = page_info.page.xpath('//h1')[0]
+        htmltitle = pageinfo.page.xpath('//h1')[0]
         htmltable = htmltitle.xpath('./following-sibling::table')[0]
         table = [tr.getchildren() for tr in htmltable.getchildren() if tr.tag == 'tr']
 
@@ -111,18 +113,21 @@ class Result:
 
 
 class Semester:
-    def __init__(self, page_info, name, number):
-        self.page_info = page_info
+    def __init__(self, name, number, aw_pageinfo):
         self.name = name
         self.number = number
-        self._result_infos_cache = []
+        self._aw_pageinfo = aw_pageinfo
+        self.pageinfo = None
+        self.result_infos = None
 
     @classmethod
-    def from_PageInfo(cls, page_info):
-        selected = page_info.page.xpath('//option[@selected = "selected"]')[0]
+    def from_pageinfo(cls, pageinfo):
+        selected = pageinfo.page.xpath('//option[@selected = "selected"]')[0]
         # First semester is at the bottom of the drop-down menu, count following options
         number = len(selected.xpath('./following-sibling::option')) + 1
-        return cls(page_info, selected.text, number)
+        semester = cls(selected.text, number, aw_wrap(pageinfo))
+        semester.pageinfo = pageinfo
+        return semester
 
     @classmethod
     def from_serializable(cls, data):
@@ -133,24 +138,24 @@ class Semester:
         obj._result_infos_cache = results
         return obj
 
+    async def load_page(self):
+        if self.pageinfo is None:
+            self.pageinfo = await self._aw_pageinfo
 
-    @property
-    def result_infos(self):
-        """Get the detailed info for the individual popup pages
-        Returns a generator and caches the results"""
-        def cache_results():
-            if self.page_info:
-                for page_info in self.page_info.get_result_popups():
-                    res = Result.from_PageInfo(page_info)
-                    yield res
-                    self._result_infos_cache.append(res)
-
-        return self._result_infos_cache or cache_results()
+    async def load_results(self):
+        if self.result_infos is None:
+            await self.load_page()
+            # Get links to the popup pages
+            pageinfos = [
+                webnav.PageInfo.copy_relurl(self.pageinfo, relurl)
+                for relurl in self.pageinfo.page.xpath('//a[starts-with(@id, "Popup_details")]/@href')
+            ]
+            self.result_infos = map(Result.from_pageinfo, await asyncio.gather(*pageinfos))
 
     def get_serializable(self):
         """Dump relevant information to dict
         
-        (page_info will not be stored)"""
+        (pageinfo will not be stored)"""
         return {
             'name': self.name,
             'number': self.number,
@@ -208,13 +213,16 @@ def get_new_res(semesters):
             diff_sems.append(Semester.from_serializable(sem))
     return diff_sems
 
-def do_output_io(semesters):
+async def do_output_io(session, semesters):
     """Print the data and update the data file"""
     to_display = get_config_val('semester')
     if to_display is not None:
         display_sems = [sem for sem in semesters if sem.number == to_display]
     else:
         display_sems = semesters
+
+    # Load all websites 'concurrently'
+    await asyncio.gather(*[sem.load_results() for sem in display_sems])
 
     if get_config_val('new'):
         output_sems_format(get_new_res(display_sems))
@@ -239,3 +247,10 @@ def update_data_file(display_sems):
             json.dump(list(old_sems_d.values()), file, indent=4)
     except IOError:
         pass
+
+
+
+def aw_wrap(obj):
+    async def wrapper():
+        return obj
+    return wrapper
