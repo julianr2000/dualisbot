@@ -113,10 +113,10 @@ class Result:
 
 
 class Semester:
-    def __init__(self, name, number, aw_pageinfo):
+    def __init__(self, name, number, async_get_pageinfo):
         self.name = name
         self.number = number
-        self._aw_pageinfo = aw_pageinfo
+        self._async_get_pageinfo = async_get_pageinfo
         self.pageinfo = None
         self.result_infos = None
 
@@ -140,7 +140,7 @@ class Semester:
 
     async def load_page(self):
         if self.pageinfo is None:
-            self.pageinfo = await self._aw_pageinfo
+            self.pageinfo = await self._async_get_pageinfo()
 
     async def load_results(self):
         if self.result_infos is None:
@@ -150,7 +150,7 @@ class Semester:
                 webnav.PageInfo.copy_relurl(self.pageinfo, relurl)
                 for relurl in self.pageinfo.page.xpath('//a[starts-with(@id, "Popup_details")]/@href')
             ]
-            self.result_infos = map(Result.from_pageinfo, await asyncio.gather(*pageinfos))
+            self.result_infos = list(map(Result.from_pageinfo, await asyncio.gather(*pageinfos)))
 
     def get_serializable(self):
         """Dump relevant information to dict

@@ -111,7 +111,7 @@ def parse_dropdown_menu(semester):
         urlp = urlp._replace(query=urlargs)
         # First semester is at the bottom of the drop-down menu, therefore count following option
         number = len(opt.xpath('./following-sibling::option')) + 1
-        result.append(Semester(opt.text, number, PageInfo.copy_session(semester.pageinfo, urlunparse(urlp))))
+        result.append(Semester(opt.text, number, lambda: PageInfo.copy_session(semester.pageinfo, urlunparse(urlp))))
     return result
 
 async def get_semesters(session):
