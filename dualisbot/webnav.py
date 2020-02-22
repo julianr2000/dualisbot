@@ -111,7 +111,11 @@ def parse_dropdown_menu(semester):
         urlp = urlp._replace(query=urlargs)
         # First semester is at the bottom of the drop-down menu, therefore count following option
         number = len(opt.xpath('./following-sibling::option')) + 1
-        result.append(Semester(opt.text, number, lambda: PageInfo.copy_session(semester.pageinfo, urlunparse(urlp))))
+        # Inner lambda: wrap Pageinfo.copy_session in closure because asyncio complains about unused awaitables and
+        # it may not be awaited
+        # Outer lambda: Prevents scoping issues
+        async_get_pageinfo = (lambda urlp: lambda: PageInfo.copy_session(semester.pageinfo, urlunparse(urlp)))(urlp)
+        result.append(Semester(opt.text, number, async_get_pageinfo))
     return result
 
 async def get_semesters(session):
