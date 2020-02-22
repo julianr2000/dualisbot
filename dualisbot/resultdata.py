@@ -132,10 +132,10 @@ class Semester:
     @classmethod
     def from_serializable(cls, data):
         """Recreate object from a dict created by self.get_serializable"""
-        obj = cls(None, data.get('name'), data.get('number'))
+        obj = cls(data.get('name'), data.get('number'), None)
         results_dict = data.get('results')
         results = [Result.from_serializable(res) for res in results_dict]
-        obj._result_infos_cache = results
+        obj.result_infos = results
         return obj
 
     async def load_page(self):
