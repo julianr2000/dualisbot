@@ -53,7 +53,8 @@ def config_load_json(configval):
             try:
                 with open(get_config_val(configval)) as file:
                     file_data = json.load(file)
-                    ret = func(*args, file_data, **kwargs)
+                    kwargs['file_data'] = file_data
+                    ret = func(*args, **kwargs)
             except IOError:
                 pass
             finally:
