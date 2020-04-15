@@ -1,4 +1,4 @@
-# Dualisbot
+# Dualisbot- notification planned
 A script to scrape test results from DHBW Dualis.
 
 ## Installation
