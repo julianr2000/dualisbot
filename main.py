@@ -15,7 +15,7 @@ async def main():
     read_config()
 
     try:
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False)) as session:
             sems = await get_semesters(session)
             await do_output_io(session, sems)
     except aiohttp.client_exceptions.ClientConnectorError:
@@ -34,4 +34,3 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         # don't print stacktrace
         sys.exit(1)
-

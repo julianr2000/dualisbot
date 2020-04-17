@@ -225,6 +225,7 @@ async def do_output_io(session, semesters):
     await asyncio.gather(*[sem.load_results() for sem in display_sems])
 
     if get_config_val('new'):
+        print ("neues")
         output_sems_format(get_new_res(display_sems))
     else:
         output_sems_format(display_sems)
