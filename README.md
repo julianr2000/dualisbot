@@ -5,7 +5,7 @@ A script to scrape test results from DHBW Dualis.
 Requirements: `Python >= 3.8.0`
 - Clone this repository
 ```
-$ git clone 'https://github.com/bratkartoff/dualisbot'
+$ git clone 'https://github.com/julianr2000/dualisbot-notification'
 $ cd dualisbot
 ```
 - Install dependencies
