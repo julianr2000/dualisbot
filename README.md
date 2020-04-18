@@ -6,7 +6,7 @@ Requirements: `Python >= 3.8.0`
 - Clone this repository
 ```
 $ git clone 'https://github.com/julianr2000/dualisbot-notification'
-$ cd dualisbot
+$ cd dualisbot-notification
 ```
 - Install dependencies
 ```
@@ -15,7 +15,7 @@ $ python3 -m pip install -r requirements.txt --user
 
 
 ## Basic usage
-Inside the `dualisbot` directory, execute
+Inside the `dualisbot-notification` directory, execute
 ```
 $ python3 main.py
 ```
