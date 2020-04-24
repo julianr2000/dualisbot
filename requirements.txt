@@ -7,3 +7,4 @@ idna==2.8
 lxml==4.5.0
 multidict==4.7.4
 yarl==1.4.2
+pushbullet.py

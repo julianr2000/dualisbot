@@ -1,8 +1,8 @@
-# Dualisbot- notification planned
+# Dualisbot with Pushbullet Integration
 A script to scrape test results from DHBW Dualis.
 
 ## Installation
-Requirements: `Python >= 3.8.0`
+**Requirements:** `Python >= 3.8.0`
 - Clone this repository
 ```
 $ git clone 'https://github.com/julianr2000/dualisbot-notification'
@@ -49,4 +49,9 @@ $ python3 main.py --semester 3
 Additionally, you can output only test results that have changed since the last invocation of the script
 ```
 $ python3 main.py --new
+```
+
+Also, you can have Pushbullet notifications sent to you containing the lastest changes in your grades. Before you can correctly use this feature, you have to change the API token in the resultdata.py. You can find it under "pb = Pushbullet()".
+```
+$ python3 main.py --new --json
 ```

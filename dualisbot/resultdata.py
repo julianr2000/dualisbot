@@ -13,6 +13,7 @@ from lxml import html
 from dualisbot import webnav
 from dualisbot.config import get_config_val
 
+from pushbullet import Pushbullet
 # Result extraction and printing
 
 colorama.init()
@@ -182,6 +183,7 @@ def sems_pretty_print(semesters):
             # print newline if something has been printed
             if list(sem.result_infos):
                 print()
+                return()
         semesters[-1].pretty_print()
 
 def get_old_sems_dict():
@@ -224,20 +226,29 @@ async def do_output_io(session, semesters):
     # Load all websites 'concurrently'
     await asyncio.gather(*[sem.load_results() for sem in display_sems])
 
+    #checks if anything was updated/ is new
     if get_config_val('new'):
-        print ("neues")
         output_sems_format(get_new_res(display_sems))
     else:
         output_sems_format(display_sems)
 
     update_data_file(display_sems)
 
+
 def output_sems_format(semesters):
     """Output semesters in the desired output format"""
+    pb = Pushbullet() 
     if get_config_val('json'):
         print(sems_to_json(semesters))
+        print("if")
+        #pushbullet integration
+        #if (pushbullet_on ==True):
+        push = pb.push_note("Neue Noten sind da!",sems_to_json(semesters)) # works but is only in a ugly json form
+
     else:
         sems_pretty_print(semesters)
+        push = pb.push_note("Neue Noten sind da!",str(sems_pretty_print(semesters)))#grade doesn´t work
+        print("else")
 
 def update_data_file(display_sems):
     sems_d = sems_to_dict(display_sems)
