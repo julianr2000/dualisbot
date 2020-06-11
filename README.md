@@ -58,4 +58,4 @@ $ python3 Install_Crontab.py
 ```
 
 ## Pushbullet Channel
-If you also want to use a Pushbullet Channel to recieve these results, you have to change usePushbulletChannel in the file resultdata.py to True and if you have multiple channels, you have to change the channel. 
+If you also want to use a Pushbullet Channel (different to normal notifications) to recieve these results, you have to change usePushbulletChannel in the file resultdata.py to True and if you have multiple channels, you have to change the channel. 
