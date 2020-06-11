@@ -1,5 +1,5 @@
 # Dualisbot with Pushbullet Integration
-A script to scrape test results from DHBW Dualis.
+A script to scrape test results from DHBW Dualis and send any updates to you or your channel via Pushbullet
 
 ## Installation
 **Requirements:** `Python >= 3.8.0`
@@ -46,12 +46,16 @@ You can restrict the search to one semester (this is faster than querying all pa
 $ python3 main.py --semester 3
 ```
 
-Additionally, you can output only test results that have changed since the last invocation of the script
+Additionally, you can output only test results that have changed since the last invocation of the script and let it send you a pushbullet notification of these results manually
 ```
 $ python3 main.py --new
 ```
 
-Also, you can have Pushbullet notifications sent to you containing the lastest changes in your grades. Before you can correctly use this feature, you have to change the API token in the resultdata.py. You can find it under "pb = Pushbullet()".
+## Cronjob (run it automatically in the background)
+Only possible on Unix systems like Linux and macOS. Set to run every 15 minutes.
 ```
-$ python3 main.py --new --json
+$ python3 Install_Crontab.py
 ```
+
+## Pushbullet Channel
+If you also want to use a Pushbullet Channel to recieve these results, you have to change usePushbulletChannel in the file resultdata.py to True and if you have multiple channels, you have to change the channel. 

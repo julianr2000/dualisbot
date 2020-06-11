@@ -1,3 +1,6 @@
+usePushbulletChannel = False
+channelnum = 0 # by default uses your first channel, for a manual channel use tag from "print(pb.channels)"
+
 import asyncio
 import copy
 import json
@@ -89,21 +92,41 @@ class Result:
 
 
         title_str = Fore.LIGHTBLUE_EX + self.title + Style.RESET_ALL
+        title_str_clean = self.title
 
         headers_str = Fore.LIGHTGREEN_EX + table_row(headers) + Style.RESET_ALL
+        headers_str_clean = table_row(headers)
 
         res_strings = []
+        res_strings_clean = []
         for result in self.results:
             res_strings.append(table_row([result.get(column, '') for column in headers]))
         results_str = '\n'.join(res_strings)
+        for result in self.results:
+            res_strings_clean.append(table_row([result.get(column, '') for column in headers]))
+        results_str_clean = '\n'.join(res_strings_clean)
 
         final_res_str = Fore.LIGHTYELLOW_EX + table_row(['Gesamt:', '',  self.final_results]) + Style.RESET_ALL
+        final_res_str_clean = table_row(['Gesamt:', '',  self.final_results])
 
+        list1 = []
         print(title_str)
         print(headers_str)
         print(results_str)
         print(final_res_str)
-
+        
+        #list1 = [title_str, headers_str, results_str, final_res_str]
+        list1 = [title_str_clean, headers_str_clean, results_str_clean, final_res_str_clean]
+        #print("------From List-----")
+        #print('s=%s' % str(list1))
+        pb = Pushbullet(get_config_val('pushbullet_api_key')) 
+        clean_text = title_str_clean + headers_str_clean + results_str_clean + final_res_str_clean
+        anon_text = "Im Fach: " + title_str_clean
+        push = pb.push_note("Neue Noten sind da!", clean_text)
+        # If you manually created a pushbullet channel for your course
+        if usePushbulletChannel == True:
+            my_channel = pb.channels[channelnum] # by default uses your first channel, for a manual channel use tag from "print(pb.channels)"
+            push = my_channel.push_note("Neue Noten sind da!", anon_text)
     @classmethod
     def from_serializable(cls, data):
         return cls(*map(data.get, ['title', 'results', 'final_results']))
@@ -180,11 +203,14 @@ def sems_pretty_print(semesters):
     if semesters:
         for sem in semesters[:-1]:
             sem.pretty_print()
+            print
             # print newline if something has been printed
             if list(sem.result_infos):
                 print()
                 return()
         semesters[-1].pretty_print()
+
+
 
 def get_old_sems_dict():
     """Read the data file from disk and cache the result"""
@@ -237,18 +263,16 @@ async def do_output_io(session, semesters):
 
 def output_sems_format(semesters):
     """Output semesters in the desired output format"""
-    pb = Pushbullet() 
-    if get_config_val('json'):
+    if get_config_val('json'): # when "--json" is used
         print(sems_to_json(semesters))
-        print("if")
+        print("if line")
         #pushbullet integration
         #if (pushbullet_on ==True):
-        push = pb.push_note("Neue Noten sind da!",sems_to_json(semesters)) # works but is only in a ugly json form
 
-    else:
+    else: # when "--new" or nothing is used
         sems_pretty_print(semesters)
-        push = pb.push_note("Neue Noten sind da!",str(sems_pretty_print(semesters)))#grade doesn´t work
-        print("else")
+        #push = pb.push_note("Neue Noten sind da!", sems_pretty_print(semesters) )#grade doesn´t work
+        #print("else line")
 
 def update_data_file(display_sems):
     sems_d = sems_to_dict(display_sems)

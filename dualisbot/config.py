@@ -15,7 +15,7 @@ config = {
     'data': path_complete('data/data.json')
 }
 
-secrets_keys = ['username', 'password']
+secrets_keys = ['username', 'password','pushbullet_api_key' ]
 did_read_from_input = False
 
 def read_config():
@@ -32,7 +32,7 @@ def read_config():
 def save_credentials():
     if did_read_from_input:
         # n actually has no special meaning, only y does
-        choice = input('Login successful.\nDo you want to store username and password (unencrypted) on disk? [y/n]\n')
+        choice = input('Login successful.\nDo you want to store username, password and the Pushbullet API Key (unencrypted) on disk? [y/n]\n')
         if choice.startswith('y') or choice.startswith('Y'):
             try:
                 with open(get_config_val('secrets'), 'w') as file:
@@ -45,6 +45,8 @@ def get_from_input(config_val):
         return input('Enter username for Dualis:\n')
     elif config_val == 'password':
         return getpass('Enter password:\n')
+    elif config_val == 'pushbullet_api_key':
+        return getpass('Enter Pushbullet API Key:\n')
 
 def config_load_json(configval):
     def dec(func):
